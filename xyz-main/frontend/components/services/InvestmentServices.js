@@ -1,3 +1,4 @@
+'use client'
 import { TrendingUp, Target, Shield, Award, Phone, MessageCircle, Calculator } from 'lucide-react'
 import { useState } from 'react'
 
