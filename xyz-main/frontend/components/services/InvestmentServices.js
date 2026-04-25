@@ -1,6 +1,39 @@
 import { TrendingUp, Target, Shield, Award, Phone, MessageCircle, Calculator } from 'lucide-react'
+import { useState } from 'react'
 
 const InvestmentServices = () => {
+  const [form, setForm] = useState({
+    investment_amount: '',
+    annual_return: '',
+    period_years: '5',
+    property_type: 'Residential'
+  })
+  const [result, setResult] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const handleCalculate = async () => {
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    try {
+      const res = await fetch('http://127.0.0.1:8000/roi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          investment_amount: parseFloat(form.investment_amount),
+          annual_return: parseFloat(form.annual_return),
+          period_years: parseInt(form.period_years),
+          property_type: form.property_type
+        })
+      })
+      const data = await res.json()
+      setResult(data)
+    } catch (err) {
+      setError('Failed to connect to server. Make sure backend is running.')
+    }
+    setLoading(false)
+  }
   const services = [
     {
       icon: Target,
@@ -93,30 +126,34 @@ const InvestmentServices = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Investment Amount</label>
               <input
-                type="text"
-                placeholder="₹50,00,000"
+                type="number"
+                placeholder="5000000"
                 className="input-field"
+                value={form.investment_amount}
+                onChange={e => setForm({...form, investment_amount: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Expected Annual Return</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Expected Annual Return %</label>
               <input
-                type="text"
-                placeholder="15%"
+                type="number"
+                placeholder="15"
                 className="input-field"
+                value={form.annual_return}
+                onChange={e => setForm({...form, annual_return: e.target.value})}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Investment Period</label>
-              <select className="input-field">
-                <option>5 Years</option>
-                <option>10 Years</option>
-                <option>15 Years</option>
+              <select className="input-field" value={form.period_years} onChange={e => setForm({...form, period_years: e.target.value})}>
+                <option value="5">5 Years</option>
+                <option value="10">10 Years</option>
+                <option value="15">15 Years</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Property Type</label>
-              <select className="input-field">
+              <select className="input-field" value={form.property_type} onChange={e => setForm({...form, property_type: e.target.value})}>
                 <option>Residential</option>
                 <option>Commercial</option>
                 <option>Mixed</option>
@@ -125,11 +162,32 @@ const InvestmentServices = () => {
           </div>
 
           <div className="text-center">
-            <button className="btn-primary flex items-center space-x-2 mx-auto">
+            <button onClick={handleCalculate} className="btn-primary flex items-center space-x-2 mx-auto">
               <Calculator className="w-5 h-5" />
-              <span>Calculate Returns</span>
+              <span>{loading ? 'Calculating...' : 'Calculate Returns'}</span>
             </button>
           </div>
+
+          {error && (
+            <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-lg text-center">{error}</div>
+          )}
+
+          {result && (
+            <div className="mt-8 grid md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl p-6 text-center shadow">
+                <p className="text-gray-500 text-sm mb-2">Future Value</p>
+                <p className="text-2xl font-bold text-primary-600">₹{result.future_value.toLocaleString()}</p>
+              </div>
+              <div className="bg-white rounded-xl p-6 text-center shadow">
+                <p className="text-gray-500 text-sm mb-2">Total Profit</p>
+                <p className="text-2xl font-bold text-green-600">₹{result.total_profit.toLocaleString()}</p>
+              </div>
+              <div className="bg-white rounded-xl p-6 text-center shadow">
+                <p className="text-gray-500 text-sm mb-2">Total Return</p>
+                <p className="text-2xl font-bold text-yellow-600">{result.total_return_percent}%</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Why Choose Our Investment Services */}
